@@ -1,24 +1,15 @@
 import { useEffect } from 'react';
-import { useStore } from './context';
-import { fetchContents } from './api';
-import { Header, SearchBar } from './components/Header';
-import { ContentsFilter, PricingSlider, Sorting } from './components/Filter';
-import { ContentsList } from './components/Content';
+import { Header } from './components/Header';
+import { SearchBar } from './components/SearchBar';
+import { PricingFilter } from './components/PricingFilter';
+import { PricingSlider } from './components/PricingSlider';
+import { Sorting } from './components/Sorting';
+import { ContentsList } from './components/ContentsList';
+import { startUrlSync } from './store/filters';
 import './App.css';
 
 function App() {
-  const store = useStore();
-
-  useEffect(() => {
-    const loadData = async () => {
-      store.setIsLoading(true);
-      const data = await fetchContents();
-      store.setContents(data);
-      store.setIsLoading(false);
-    };
-
-    loadData();
-  }, [store.searchKeyword, store.selectedPricingOptions]);
+  useEffect(() => startUrlSync(), []);
 
   return (
     <div className="app">
@@ -27,7 +18,7 @@ function App() {
         <div className="app-shell">
           <SearchBar />
           <div className="filter-row">
-            <ContentsFilter />
+            <PricingFilter />
             <PricingSlider />
           </div>
           <div className="sort-row">
