@@ -213,7 +213,8 @@ Architect가 지적한 4건을 minimal diff로 정리. 각 수정 후 즉시 56 
 ### Phase 9. Git 히스토리 정리 (Commit Hygiene)
 
 평가자가 변화를 단계별로 추적할 수 있도록 기능 단위 커밋으로 정리.
-초기 9개 feature 커밋 + 문서/회귀 보강 3개 = 총 12개 (legacy 제외):
+초기 9개 feature 커밋(legacy 이후) + 문서/회귀/사후 보강 = `git log
+--oneline`로 확인. 주요 커밋:
 
 ```
 355d411 first commit (legacy)
@@ -228,11 +229,16 @@ a3753ea feat(api): TanStack Query layer with typed errors and shape validation
 623fcd8 docs: add AI usage record, refactor diary, and submission notes
 3caebd5 docs(ai-usage): rewrite as 9-phase workflow narrative
 3f2c1a6 chore: ignore claude-mem AGENTS.md memory cache
-afce730 Preserve inclusive price filtering after review     ← Phase 10
+afce730 Preserve inclusive price filtering after review                    ← Phase 10
+ac09bcf docs: sync README/AI_USAGE/REFACTOR_NOTES with post-review state
+86951a1 chore: ignore vitest coverage output
+…(이후 커밋은 Phase 11에서 설명)
 ```
 
 각 커밋 본문에 **무엇을** 바꿨는지뿐 아니라 **왜** (어떤 레거시 결함을
-해소하는지) 적시.
+해소하는지) 적시. 본 문서의 커밋 리스트는 사후 변경분을 포함해 시점에
+따라 길어질 수 있으므로, 정확한 최종 상태는 `git log --oneline`이
+ground truth.
 
 ---
 
@@ -269,6 +275,46 @@ afce730 Preserve inclusive price filtering after review     ← Phase 10
 못한 사각지대를 다른 모델 페어링이 메운 두 번째 사례. AI_USAGE.md에서
 표현했던 `핸들 교차 방지(min ≤ max-1, max ≥ min+1)`은 이 시점에 **잘못된
 acceptance criterion**이었음을 인정 — README 계약(`양 끝값 포함`)이 우선.
+
+---
+
+### Phase 11. 다중 모델 교차 감사 + 엔지니어 판단 (CCG: Codex + Gemini)
+
+**목표:** 단일 모델 적대적 리뷰(Phase 8 / Phase 10)가 충분한지 한 번 더
+검증. 동일 README ↔ 구현 일치성 평가를 **두 모델**(Codex 정확성 검증 +
+Gemini UX 디테일 검증)에 병렬로 위임하고, Claude가 결과를 합의/충돌
+구분하여 통합. 이번 페이즈는 **AI 권고를 그대로 받지 않는다**는 가이드라인
+원칙이 가장 두드러진 사례.
+
+**사용 도구:** OMC `/oh-my-claudecode:ccg` 슬래시 — codex CLI(`codex exec`)와
+gemini CLI(`gemini -p`) 동시 호출 후 Claude가 통합.
+
+**합의 결과:** 13개 README 요구사항 중 **12개 PASS, 1개 PARTIAL** 후보
+지적. Codex가 두 건의 잠재 이슈를 추가로 제기.
+
+| # | Codex 지적 | 판단 | 근거 |
+| --- | --- | --- | --- |
+| 1 | `ContentCard`가 Paid 아이템에 가격(`$10.99`)만 표시하고 옵션명("Paid")을 별도로 안 보여줌 → README 87줄 "가격(Paid일 경우) 및 옵션" 위반 가능 | **거부** | README 87줄을 Codex 해석(Paid → 가격 + "Paid" 라벨 둘 다)대로 받아도 되지만, 한국어 원문 "**가격(Paid일 경우) 및 옵션**"은 "Paid → 가격 / 그 외 → 옵션 라벨"로 읽는 게 더 자연스러움. FREE/View Only 라벨이 옵션 자리를 채우고 Paid는 가격 자체가 옵션 식별자 역할. 디자인 참고 이미지(docs/design.png)와 일관 — 시각 노이즈 추가가 README를 더 잘 충족시킨다고 보기 어려움. **AI 권고를 무비판 수용하지 않은 사례**로 본 워크플로의 핵심 원칙. |
+| 2 | Phase 9 커밋 리스트가 stale — 문서는 `afce730`까지만 명시했지만 실제 HEAD는 `ac09bcf` / `86951a1`로 진행됨 | **수용** | 자기-기술 모순. 채점자가 `git log` 한 번이면 발각. Phase 9 표를 현재 HEAD까지 갱신하고, ground truth는 git log임을 명시. |
+
+**적용 변경**
+- `docs/AI_USAGE.md`: Phase 9 커밋 리스트 동기화 + 본 Phase 11 추가 (코드
+  변경 없음).
+
+회귀 테스트 58 cases 그대로 그린 유지.
+
+**시사점 (이전 페이즈와의 차이):**
+- Phase 8: Codex가 잡은 README 사실 오류 → 즉시 수정 (단순 사실 모순)
+- Phase 10: Codex가 잡은 README ↔ 구현 미세 계약 위반 → 즉시 수정
+  (한 단계 더 깊은 발견)
+- **Phase 11: CCG가 제기한 두 건 중 한 건은 거부** — 다중 모델 페어링이
+  더 많은 후보를 띄우긴 하지만, 그 모든 후보가 실제 결함은 아니며
+  엔지니어의 README 정독과 product judgment가 게이트.
+
+이 패턴은 본 과제 가이드라인의 *"AI 생성 코드의 취약점을 보완하고
+시스템에 맞게 최적화하는 검토 및 개선 역량"* 그 자체. AI가 띄운 후보를
+그대로 commit으로 만드는 것이 아니라, README 원문을 다시 읽고 디자인
+참고 이미지와 대조해 false positive를 식별한 것이 본 페이즈의 산출물.
 
 ---
 
@@ -312,7 +358,9 @@ acceptance criterion**이었음을 인정 — README 계약(`양 끝값 포함`)
 Claude Opus 4.7을 **코드 생성기가 아닌 페어 프로그래머**로 사용해, 정적
 분석 → 아키텍처 설계 → PRD 계획 → TDD 구현 → 다층 검증 → architect
 리뷰 → anti-slop 정리 → Codex 적대적 리뷰 → 커밋 정리 → 적대적 리뷰
-후 회귀 수정까지 10단계 워크플로로 끌고 갔고, 각 단계마다 AI 출력을
-그대로 받지 않고 검토/테스트/브라우저 검증을 거쳐 결정을 직접
-내렸습니다. Codex 페어링이 README 계약↔구현 모순 두 건을 추가로
-잡아낸 사례(Phase 10)가 그 가치의 증거.
+후 회귀 수정 → CCG 다중 모델 교차 감사까지 11단계 워크플로로
+끌고 갔고, 각 단계마다 AI 출력을 그대로 받지 않고 검토/테스트/
+브라우저 검증을 거쳐 결정을 직접 내렸습니다. Phase 10에서는 Codex가
+잡은 README 계약↔구현 미세 모순을 즉시 수정했고, Phase 11에서는
+CCG가 제기한 두 건 중 한 건은 README 재독을 통해 거부 — AI 권고를
+무비판 수용하지 않은 사례.
