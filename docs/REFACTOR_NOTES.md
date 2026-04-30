@@ -61,6 +61,15 @@
 12. **API 에러 처리.** `fetch`가 더 이상 조용히 실패하지 않음. 2xx가
     아닌 응답은 타입드 `ContentsFetchError`로 표면화되며 UI는 retry
     버튼을 노출.
+13. **카드 모서리 radius 누락.** 디자인 참고 이미지(`docs/design.png`)는
+    카드 wrapper(이미지 + 가격 정보) 전체가 하나의 둥근 모서리이고
+    이미지 좌우 하단은 직각이지만, `.content-card` / `.skeleton-card`에
+    `border-radius`가 없어 카드 전체가 직각으로 렌더링됨. 두 wrapper
+    클래스에만 `border-radius: 4px`를 적용 — 기존 `overflow: hidden`이
+    이미지 상단 두 모서리를 자연스럽게 클립하여 카드 상단은 둥글고,
+    이미지 하단은 직각, 가격 정보가 카드 하단 둥근 모서리를 형성.
+    이미지 자체에는 radius를 주지 않아 디자인 의도(이미지 좌우 하단
+    직각)와 일치. AI_USAGE.md Phase 12 참조.
 
 ## 주목할 추가 사항
 
