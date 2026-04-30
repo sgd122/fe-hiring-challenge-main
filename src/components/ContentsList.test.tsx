@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach, beforeAll, afterAll, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, beforeEach, beforeAll, afterAll, afterEach, vi } from 'vitest';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { ContentsList } from './ContentsList';
 import { useFiltersStore } from '../store/filters';
-import { DEFAULT_URL_STATE } from '../lib/url-state';
+import { DEFAULT_URL_STATE, LOAD_MORE_INCREMENT } from '../lib/url-state';
 import { PricingOption } from '../types';
 import type { ContentItem } from '../types';
 
@@ -23,11 +23,13 @@ const mockItems: ContentItem[] = Array.from({ length: 60 }).map((_, index) => ({
 }));
 
 const originalIO = globalThis.IntersectionObserver;
+const observers: FakeIntersectionObserver[] = [];
 
 class FakeIntersectionObserver {
   readonly callback: IntersectionObserverCallback;
   constructor(callback: IntersectionObserverCallback) {
     this.callback = callback;
+    observers.push(this);
   }
   observe = () => undefined;
   unobserve = () => undefined;
@@ -36,6 +38,13 @@ class FakeIntersectionObserver {
   root = null;
   rootMargin = '';
   thresholds = [];
+
+  trigger(isIntersecting = true) {
+    this.callback(
+      [{ isIntersecting } as IntersectionObserverEntry],
+      this as unknown as IntersectionObserver
+    );
+  }
 }
 
 beforeAll(() => {
@@ -75,7 +84,12 @@ const createWrapper = (items: ContentItem[]) => {
 describe('<ContentsList />', () => {
   beforeEach(() => {
     resetStore();
+    observers.length = 0;
     vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('renders cards based on filtered+sorted data', async () => {
@@ -98,6 +112,32 @@ describe('<ContentsList />', () => {
     expect(screen.getAllByRole('article')).toHaveLength(DEFAULT_URL_STATE.displayCount);
     expect(container.querySelectorAll('.skeleton-card')).toHaveLength(0);
     expect(container.querySelector('.load-more-trigger')).not.toBeNull();
+  });
+
+  it('renders append skeletons while the next client-side page is loading', async () => {
+    const { Wrapper } = createWrapper(mockItems);
+    const { container } = render(<ContentsList />, { wrapper: Wrapper });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('contents-meta')).toHaveTextContent('60 items');
+    });
+
+    vi.useFakeTimers();
+    act(() => {
+      observers.at(-1)?.trigger();
+    });
+
+    expect(container.querySelectorAll('.skeleton-card')).toHaveLength(4);
+    expect(screen.getAllByRole('article')).toHaveLength(DEFAULT_URL_STATE.displayCount);
+
+    await act(async () => {
+      vi.advanceTimersByTime(250);
+    });
+
+    expect(container.querySelectorAll('.skeleton-card')).toHaveLength(0);
+    expect(screen.getAllByRole('article')).toHaveLength(
+      DEFAULT_URL_STATE.displayCount + LOAD_MORE_INCREMENT
+    );
   });
 
   it('shows no-results state when filters exclude everything', async () => {

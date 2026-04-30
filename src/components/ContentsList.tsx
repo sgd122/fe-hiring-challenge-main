@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useContents } from '../api/contents';
 import { useFiltersStore } from '../store/filters';
 import { useColumns } from '../hooks/useColumns';
@@ -10,6 +10,7 @@ import './Content.css';
 
 const INITIAL_SKELETON_COUNT = 8;
 const APPEND_SKELETON_COUNT = 4;
+const APPEND_LOADING_DELAY_MS = 250;
 
 export function ContentsList() {
   const { data, isLoading, isFetching, error, refetch } = useContents();
@@ -22,6 +23,8 @@ export function ContentsList() {
 
   const columns = useColumns();
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const appendTimerRef = useRef<number | null>(null);
+  const [isAppending, setIsAppending] = useState(false);
 
   const filteredContents = useMemo(() => {
     if (!data) return [];
@@ -39,6 +42,23 @@ export function ContentsList() {
 
   const hasMore = displayedContents.length < filteredContents.length;
 
+  const clearAppendTimer = useCallback(() => {
+    if (appendTimerRef.current === null) return;
+    window.clearTimeout(appendTimerRef.current);
+    appendTimerRef.current = null;
+  }, []);
+
+  const startAppendLoad = useCallback(() => {
+    if (!hasMore || appendTimerRef.current !== null) return;
+
+    setIsAppending(true);
+    appendTimerRef.current = window.setTimeout(() => {
+      appendTimerRef.current = null;
+      loadMore();
+      setIsAppending(false);
+    }, APPEND_LOADING_DELAY_MS);
+  }, [hasMore, loadMore]);
+
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel || !hasMore) return;
@@ -46,7 +66,7 @@ export function ContentsList() {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) {
-          loadMore();
+          startAppendLoad();
         }
       },
       { threshold: 0.1, rootMargin: '120px' }
@@ -56,7 +76,13 @@ export function ContentsList() {
     return () => {
       observer.disconnect();
     };
-  }, [hasMore, loadMore]);
+  }, [hasMore, startAppendLoad]);
+
+  useEffect(() => {
+    return () => {
+      clearAppendTimer();
+    };
+  }, [clearAppendTimer]);
 
   if (error) {
     return (
@@ -79,7 +105,7 @@ export function ContentsList() {
   }
 
   const showInitialSkeletons = isLoading || (!data && isFetching);
-  const showAppendSkeletons = hasMore && isFetching && !showInitialSkeletons;
+  const showAppendSkeletons = hasMore && isAppending && !showInitialSkeletons;
 
   return (
     <section className="contents-section">

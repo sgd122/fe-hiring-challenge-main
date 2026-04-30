@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { useFiltersStore } from './filters';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { startUrlSync, useFiltersStore } from './filters';
 import { PricingOption } from '../types';
 import { DEFAULT_URL_STATE } from '../lib/url-state';
 
@@ -14,8 +14,17 @@ const resetStore = () => {
 };
 
 describe('useFiltersStore', () => {
+  let stopUrlSync: (() => void) | undefined;
+
   beforeEach(() => {
+    window.history.replaceState(null, '', '/');
     resetStore();
+  });
+
+  afterEach(() => {
+    stopUrlSync?.();
+    stopUrlSync = undefined;
+    window.history.replaceState(null, '', '/');
   });
 
   it('initial state matches DEFAULT_URL_STATE for non-action fields', () => {
@@ -93,5 +102,41 @@ describe('useFiltersStore', () => {
     expect(state.sortOption).toBe('price_high');
     expect(state.priceRange).toEqual([10, 500]);
     expect(state.displayCount).toBe(60);
+  });
+
+  it('startUrlSync mirrors filter changes to URL query parameters and clears them on reset', () => {
+    stopUrlSync = startUrlSync();
+
+    const store = useFiltersStore.getState();
+    store.setSearchKeyword('jacket');
+    store.togglePricingOption(PricingOption.PAID);
+    store.setSortOption('price_high');
+    store.setPriceRange([10, 500]);
+    store.loadMore();
+
+    expect(window.location.search).toBe(
+      '?q=jacket&pricing=0&sort=price_high&min=10&max=500&limit=48'
+    );
+
+    useFiltersStore.getState().resetFilters();
+    expect(window.location.search).toBe('');
+  });
+
+  it('startUrlSync hydrates store state from URL on browser history navigation', () => {
+    stopUrlSync = startUrlSync();
+    window.history.pushState(
+      null,
+      '',
+      '/?q=coat&pricing=0%2C1&sort=price_low&min=25&max=750&limit=80'
+    );
+
+    window.dispatchEvent(new PopStateEvent('popstate'));
+
+    const state = useFiltersStore.getState();
+    expect(state.searchKeyword).toBe('coat');
+    expect(state.selectedPricingOptions).toEqual([PricingOption.PAID, PricingOption.FREE]);
+    expect(state.sortOption).toBe('price_low');
+    expect(state.priceRange).toEqual([25, 750]);
+    expect(state.displayCount).toBe(80);
   });
 });
