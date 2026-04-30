@@ -88,6 +88,20 @@
   align-items: center;
   gap: 12px;
   min-width: 170px;
+  transition: opacity 0.2s;
+}
+
+.slider-wrapper--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.slider-wrapper--disabled .slider-thumb {
+  cursor: not-allowed;
+}
+
+.slider-wrapper--disabled .slider-track {
+  background-color: #4a4f56;
 }
 
 .slider-value {
