@@ -33,7 +33,10 @@ log for the AI-driven workflow.
    sorted `'9'` before `'90'`. Fixed.
 3. **Pricing slider disconnected.** Local-only state never reached the filter.
    Now bound to `priceRange` in the store, with disabled state when Paid is not
-   selected, and crossing prevented (min ≤ max-1, max ≥ min+1).
+   selected. Inversion is prevented (min ≤ max, max ≥ min) but equal handles
+   are intentionally allowed so an exact-price filter (e.g. `min === max ===
+   50`) is selectable — the README requires inclusive endpoints. See
+   `docs/AI_USAGE.md` Phase 10 for the post-review fix.
 4. **Reset was incomplete.** Search keyword, sort, slider, and display count
    stayed put. Reset now restores every URL-backed field.
 5. **`sessionStorage` violated the "no browser storage" rule.** Removed.
@@ -67,12 +70,12 @@ log for the AI-driven workflow.
 
 ## Tests
 
-`npm test` — 56 cases:
+`npm test` — 58 cases:
 
 - `src/lib/filters.test.ts` — 16 cases (filter combinations, sort numerics, immutability)
 - `src/lib/url-state.test.ts` — 14 cases (parse, defaults, clamps, roundtrip)
 - `src/lib/format.test.ts` — 4 cases (price label formatting)
 - `src/store/filters.test.ts` — 9 cases (store actions, reset, hydration)
 - `src/components/PricingFilter.test.tsx` — 3 cases (UI behaviour, reset)
-- `src/components/PricingSlider.test.tsx` — 6 cases (disabled, cross-prevention, store sync)
-- `src/components/ContentsList.test.tsx` — 4 cases (renders, no-result, error, filter)
+- `src/components/PricingSlider.test.tsx` — 7 cases (disabled, non-inversion, inclusive endpoint, store sync)
+- `src/components/ContentsList.test.tsx` — 5 cases (renders, no-result, error, filter, idle-no-skeleton)

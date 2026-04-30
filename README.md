@@ -27,7 +27,7 @@ npm run dev          # Vite dev server (http://localhost:5173)
 npm run build        # tsc -b && vite build
 npm run preview      # serve the production build
 npm run lint         # eslint
-npm test             # vitest run (56 cases)
+npm test             # vitest run (58 cases)
 ```
 
 ## Getting Started

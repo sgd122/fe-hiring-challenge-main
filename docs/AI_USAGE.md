@@ -12,7 +12,7 @@
 | Claude Code subagents (`architect`, `executor`, `code-reviewer`) | 단계별 위임 — 검토는 architect, 구현은 executor, 리뷰는 code-reviewer로 분리해 self-approve를 방지. |
 | **OpenAI Codex** (Adversarial Review CLI) | 별도 모델 관점의 적대적 리뷰. 마지막 단계에서 README와 구현 일관성 검증. |
 | Playwright MCP (브라우저 자동화) | 실제 브라우저에서 4개 반응형 breakpoint, 무한 스크롤, URL 하이드레이션, 슬라이더 활성화, 빈 상태 등을 시각 검증. |
-| Vitest + React Testing Library | AI가 작성한 단위/컴포넌트 테스트 56 cases (logic + URL state + store + filter UI + ContentsList integration). |
+| Vitest + React Testing Library | AI가 작성한 단위/컴포넌트 테스트 58 cases (logic + URL state + store + filter UI + ContentsList integration; Phase 10 회귀 테스트 +2 포함). |
 
 > **검토 원칙:** AI가 만든 코드는 한 줄도 그대로 받지 않았습니다. 매 단계
 > 변경분을 검토 → 테스트 → 브라우저 확인을 거친 뒤에만 다음 단계로 넘어갔고,
@@ -148,7 +148,7 @@
 | 레이어 | 도구 | 확인 내용 |
 | --- | --- | --- |
 | Static | `npm run lint` (eslint), `tsc -b` | 타입 에러, react-hooks/set-state-in-effect, react-refresh/only-export-components |
-| Unit / Integration | `vitest run` (56 cases) | 필터/정렬/포맷/URL/store/UI 동작 |
+| Unit / Integration | `vitest run` (58 cases) | 필터/정렬/포맷/URL/store/UI 동작 |
 | Live | Playwright MCP (실제 브라우저) | 4개 viewport (1400→4cols, 1080→3cols, 700→2cols, 450→1cols), URL 하이드레이션 (`?q=jacket&pricing=0,1&sort=price_high&min=10&max=200` → 정확히 복원), 무한 스크롤 (28→48 cards, URL `?limit=48`로 갱신), 슬라이더 활성화 토글, "No items match your filters" 빈 상태 |
 
 console error도 0건 (favicon 404 제외) 확인.
@@ -212,8 +212,8 @@ Architect가 지적한 4건을 minimal diff로 정리. 각 수정 후 즉시 56 
 
 ### Phase 9. Git 히스토리 정리 (Commit Hygiene)
 
-평가자가 변화를 단계별로 추적할 수 있도록 9개의 기능 단위 커밋으로
-정리:
+평가자가 변화를 단계별로 추적할 수 있도록 기능 단위 커밋으로 정리.
+초기 9개 feature 커밋 + 문서/회귀 보강 3개 = 총 12개 (legacy 제외):
 
 ```
 355d411 first commit (legacy)
@@ -226,10 +226,49 @@ a3753ea feat(api): TanStack Query layer with typed errors and shape validation
 36228f0 feat(ui): contents list with responsive grid, infinite scroll, skeletons, empty state
 1ea21e6 refactor(app): compose new shell, drop legacy refetch effect
 623fcd8 docs: add AI usage record, refactor diary, and submission notes
+3caebd5 docs(ai-usage): rewrite as 9-phase workflow narrative
+3f2c1a6 chore: ignore claude-mem AGENTS.md memory cache
+afce730 Preserve inclusive price filtering after review     ← Phase 10
 ```
 
 각 커밋 본문에 **무엇을** 바꿨는지뿐 아니라 **왜** (어떤 레거시 결함을
 해소하는지) 적시.
+
+---
+
+### Phase 10. 적대적 리뷰 후 회귀 수정 (Post-Review Regression Fix)
+
+**목표:** Phase 8(Codex 적대적 리뷰)의 README 사실 오류 수정으로 끝나지
+않고, Codex 관점으로 **README 계약 ↔ 구현 동작** 일관성을 한 번 더
+교차 점검. 그 결과 Phase 6 architect도, Phase 7 anti-slop도 놓친 두 건의
+계약 위반을 발견했습니다.
+
+**발견한 결함**
+
+| # | README 계약 | 실제 구현 | 영향 |
+| --- | --- | --- | --- |
+| 1 | "Pricing Slider 필터 기준: 양 끝값 포함" | clamp가 `min ≤ max-1`, `max ≥ min+1` — 동일 값 선택 불가 | `min === max === 50` 같은 정확 가격 필터링 차단 |
+| 2 | Skeleton UI는 "로딩 시" 노출 | append-skeleton 조건이 `hasMore && !showInitialSkeletons`만 — fetch 없는 idle 상태에도 노출 | 사용자에게 "로딩 중"인 것처럼 오해 유발 |
+
+**적용한 수정 (afce730, 4 lines net)**
+
+- `PricingSlider.tsx`: `Math.min(req, maxVal - 1)` → `Math.min(req, maxVal)`,
+  `Math.max(req, minVal + 1)` → `Math.max(req, minVal)`. 핸들 역전(min > max)은
+  여전히 차단되지만, 동일 값(min === max)은 정확 가격 필터링을 위해 허용.
+- `ContentsList.tsx`: `showAppendSkeletons = hasMore && isFetching && !showInitialSkeletons`로
+  실제 in-flight 요청이 있을 때만 skeleton 노출.
+
+**회귀 테스트 +2** (PricingSlider `7 cases`, ContentsList `5 cases`):
+- "allows handles to meet at the same value (inclusive endpoint)"
+- "does not show append skeletons when not fetching"
+
+총 테스트 56 → 58. lint/build/test 셋 모두 그린 유지.
+
+**시사점:** Codex가 README의 *문구*만 점검한 것이 아니라 그 문구를
+*구현이 충족하는지*까지 확장 점검한 결과. 같은 모델(Claude)에서 발견하지
+못한 사각지대를 다른 모델 페어링이 메운 두 번째 사례. AI_USAGE.md에서
+표현했던 `핸들 교차 방지(min ≤ max-1, max ≥ min+1)`은 이 시점에 **잘못된
+acceptance criterion**이었음을 인정 — README 계약(`양 끝값 포함`)이 우선.
 
 ---
 
@@ -271,7 +310,9 @@ a3753ea feat(api): TanStack Query layer with typed errors and shape validation
 ## 요약 한 줄
 
 Claude Opus 4.7을 **코드 생성기가 아닌 페어 프로그래머**로 사용해, 정적
-분석 → 아키텍처 설계 → PRD 계획 → TDD 구현 → 다층 검증 → architect /
-Codex 이중 리뷰 → 단계별 커밋 정리까지 9단계 워크플로로 끌고 갔고, 각
-단계마다 AI 출력을 그대로 받지 않고 검토/테스트/브라우저 검증을 거쳐
-결정을 직접 내렸습니다.
+분석 → 아키텍처 설계 → PRD 계획 → TDD 구현 → 다층 검증 → architect
+리뷰 → anti-slop 정리 → Codex 적대적 리뷰 → 커밋 정리 → 적대적 리뷰
+후 회귀 수정까지 10단계 워크플로로 끌고 갔고, 각 단계마다 AI 출력을
+그대로 받지 않고 검토/테스트/브라우저 검증을 거쳐 결정을 직접
+내렸습니다. Codex 페어링이 README 계약↔구현 모순 두 건을 추가로
+잡아낸 사례(Phase 10)가 그 가치의 증거.
