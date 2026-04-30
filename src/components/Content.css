@@ -68,15 +68,27 @@
   width: 100%;
   aspect-ratio: 1 / 1;
   overflow: hidden;
-  background-color: #ececec;
+  background-color: #1f2125;
 }
 
 .card-image {
   display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .card-info {
   padding: 12px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-info-text {
+  min-width: 0;
+  flex: 1;
 }
 
 .card-title {
@@ -96,7 +108,13 @@
 
 .card-price {
   font-size: 14px;
+  font-weight: 700;
   white-space: nowrap;
+  color: #ffffff;
+}
+
+.card-price--free {
+  color: #79ecce;
 }
 
 .skeleton-card {
@@ -129,7 +147,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
