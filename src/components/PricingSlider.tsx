@@ -16,7 +16,7 @@ export function PricingSlider() {
   const handleMinChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
       const requested = Number(event.target.value);
-      const next = Math.min(requested, maxVal - 1);
+      const next = Math.min(requested, maxVal);
       const clamped = Math.max(PRICE_MIN, next);
       setPriceRange([clamped, maxVal]);
     },
@@ -26,7 +26,7 @@ export function PricingSlider() {
   const handleMaxChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
       const requested = Number(event.target.value);
-      const next = Math.max(requested, minVal + 1);
+      const next = Math.max(requested, minVal);
       const clamped = Math.min(PRICE_MAX, next);
       setPriceRange([minVal, clamped]);
     },

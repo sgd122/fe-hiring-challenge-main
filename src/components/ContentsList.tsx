@@ -79,7 +79,7 @@ export function ContentsList() {
   }
 
   const showInitialSkeletons = isLoading || (!data && isFetching);
-  const showAppendSkeletons = hasMore && !showInitialSkeletons;
+  const showAppendSkeletons = hasMore && isFetching && !showInitialSkeletons;
 
   return (
     <section className="contents-section">

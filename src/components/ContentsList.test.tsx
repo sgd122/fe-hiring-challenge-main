@@ -87,6 +87,19 @@ describe('<ContentsList />', () => {
     expect(screen.getAllByRole('article').length).toBe(DEFAULT_URL_STATE.displayCount);
   });
 
+  it('does not render append skeletons after the initial load settles when more items remain', async () => {
+    const { Wrapper } = createWrapper(mockItems);
+    const { container } = render(<ContentsList />, { wrapper: Wrapper });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('contents-meta')).toHaveTextContent('60 items');
+    });
+
+    expect(screen.getAllByRole('article')).toHaveLength(DEFAULT_URL_STATE.displayCount);
+    expect(container.querySelectorAll('.skeleton-card')).toHaveLength(0);
+    expect(container.querySelector('.load-more-trigger')).not.toBeNull();
+  });
+
   it('shows no-results state when filters exclude everything', async () => {
     useFiltersStore.setState({ searchKeyword: 'totally-nonexistent-keyword' });
     const { Wrapper } = createWrapper(mockItems);

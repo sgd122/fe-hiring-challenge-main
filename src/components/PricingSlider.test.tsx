@@ -49,7 +49,7 @@ describe('<PricingSlider />', () => {
     });
     render(<PricingSlider />);
     fireEvent.change(screen.getByLabelText('Minimum price'), { target: { value: '500' } });
-    expect(useFiltersStore.getState().priceRange[0]).toBe(99); // capped at max-1
+    expect(useFiltersStore.getState().priceRange[0]).toBe(100); // capped at max
   });
 
   it('prevents max handle from crossing min handle', () => {
@@ -59,7 +59,20 @@ describe('<PricingSlider />', () => {
     });
     render(<PricingSlider />);
     fireEvent.change(screen.getByLabelText('Maximum price'), { target: { value: '10' } });
-    expect(useFiltersStore.getState().priceRange[1]).toBe(51); // capped at min+1
+    expect(useFiltersStore.getState().priceRange[1]).toBe(50); // capped at min
+  });
+
+  it('allows selecting a single inclusive price point when handles meet', () => {
+    useFiltersStore.setState({
+      selectedPricingOptions: [PricingOption.PAID],
+      priceRange: [50, 100],
+    });
+    render(<PricingSlider />);
+    fireEvent.change(screen.getByLabelText('Minimum price'), { target: { value: '100' } });
+    expect(useFiltersStore.getState().priceRange).toEqual([100, 100]);
+
+    fireEvent.change(screen.getByLabelText('Maximum price'), { target: { value: '100' } });
+    expect(useFiltersStore.getState().priceRange).toEqual([100, 100]);
   });
 
   it('displays the current min and max values', () => {
