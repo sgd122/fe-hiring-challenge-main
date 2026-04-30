@@ -27,8 +27,9 @@ tsconfig.tsbuildinfo
 .eval-workspace/
 reports/
 
-# Agent tooling artifacts (Claude Code, Serena, OMC)
+# Agent tooling artifacts (Claude Code, Serena, OMC, claude-mem)
 .omc/
 .serena/
 .playwright-mcp/
 .omx/
+AGENTS.md
