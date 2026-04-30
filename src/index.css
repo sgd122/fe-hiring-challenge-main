@@ -1,0 +1,52 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
+
+:root {
+  color-scheme: dark;
+  --bg: #08090b;
+  --panel: #17191d;
+  --panel-soft: #1e2126;
+  --line: rgba(121, 236, 206, 0.2);
+  --accent: #79ecce;
+  --text: #e7ecef;
+  --muted: #7f848d;
+  --subtle: #666b72;
+}
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Archivo', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #090b0d;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2f343c;
+  border-radius: 3px;
+}

@@ -1,0 +1,154 @@
+.filter-section {
+  flex: 1;
+}
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.filter-label {
+  color: #6e747d;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+}
+
+.filter-options {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+}
+
+.filter-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #dbe1e5;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.filter-checkbox input[type='checkbox'] {
+  accent-color: #79ecce;
+  cursor: pointer;
+}
+
+.reset-btn {
+  background: transparent;
+  border: none;
+  color: #868d95;
+  padding: 4px 0;
+  font-size: 11px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  transition: all 0.2s;
+}
+
+.reset-btn:hover {
+  color: #79ecce;
+}
+
+.sorting-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.sorting-label {
+  color: #70767e;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+.sorting-select {
+  min-width: 130px;
+  background: transparent;
+  color: #e7ecef;
+  border: none;
+  border-bottom: 1px solid rgba(121, 236, 206, 0.24);
+  border-radius: 0;
+  padding: 6px 18px 6px 8px;
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+}
+
+.sorting-select:focus {
+  border-color: #79ecce;
+}
+
+.slider-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 170px;
+}
+
+.slider-value {
+  color: #70767e;
+  font-size: 11px;
+  min-width: 36px;
+  text-align: center;
+}
+
+.slider-container {
+  position: relative;
+  flex: 1;
+  height: 4px;
+  background-color: #31353b;
+  border-radius: 2px;
+}
+
+.slider-track {
+  position: absolute;
+  height: 100%;
+  background-color: #79ecce;
+  border-radius: 2px;
+}
+
+.slider-thumb {
+  position: absolute;
+  width: 100%;
+  height: 4px;
+  top: 0;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+
+.slider-thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #79ecce;
+  cursor: pointer;
+  pointer-events: all;
+  border: 2px solid #111318;
+}
+
+.slider-thumb::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #79ecce;
+  cursor: pointer;
+  pointer-events: all;
+  border: 2px solid #111318;
+}
+
+.slider-thumb-left {
+  z-index: 3;
+}
+
+.slider-thumb-right {
+  z-index: 4;
+}
